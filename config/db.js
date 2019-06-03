@@ -6,6 +6,10 @@ const mongoUrl = `mongodb://${process.env.DB_USER}:${process.env.DB_PASSWORD}@${
 }:${process.env.DB_PORT}/${process.env.DB_NAME}`;
 
 mongoose
-  .connect(mongoUrl, { useNewUrlParser: true, useCreateIndex: true })
+  .connect(mongoUrl, {
+    useNewUrlParser: true,
+    useCreateIndex: true,
+    useFindAndModify: false
+  })
   .then(() => logger.info("Connection Established"))
   .catch(err => logger.error(err.message));

@@ -1,4 +1,5 @@
 const userRepo = require("../repositories/userRepo");
+const adminRepo = require("../repositories/adminRepo");
 const logger = require("../config/logger");
 const validateRegistration = require("../validation/registration");
 const { codes, ServiceResponse } = require("../vo");
@@ -52,16 +53,42 @@ const register = async (req, res, next) => {
   }
 };
 
+const getLoginRepo = userType => {
+  switch (userType) {
+    case "student":
+      return studentRepo;
+      break;
+    case "admin":
+      return adminRepo;
+      break;
+    case "teacher":
+      return teacherRepo;
+      break;
+    case "guardian":
+      return guardianRepo;
+      break;
+    default:
+      return null;
+      break;
+  }
+};
+
 const login = async (req, res, next) => {
   const response = new ServiceResponse(codes.AF_CODE, codes.AF_MSG);
   const userID = req.body.userID;
   const password = req.body.password;
+  const userType = req.body.userType;
+
   try {
     let user = null;
+    const method = getLoginRepo(userType);
+    if (method === null) {
+      return res.json(response);
+    }
     if (validate.isEmail(userID)) {
-      user = await userRepo.findByEmail(userID);
+      user = await method.findByEmail(userID);
     } else {
-      user = await userRepo.findByUsername(userID);
+      user = await method.findByUserID(userID);
     }
 
     // Check if user exists
@@ -75,8 +102,8 @@ const login = async (req, res, next) => {
     if (comparePassword(password, user.password)) {
       const payload = {
         userID: user._id,
-        username: user.username,
-        userType: user.userType
+        username: user.userID,
+        userType: userType
       };
       response.status = codes.GS_CODE;
       response.description = codes.GS_MSG;
@@ -87,7 +114,7 @@ const login = async (req, res, next) => {
     return res.json(response);
   } catch (err) {
     logger.error(`Error logging user in with message: ${err.message}`);
-    
+
     response.status = codes.GE_CODE;
     response.description = codes.GE_MSG;
     return res.json(response);
